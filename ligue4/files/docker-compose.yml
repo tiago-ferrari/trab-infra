@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  servidor:
+    build:
+      context: .
+      dockerfile: Dockerfile.servidor
+    container_name: servidor
+    privileged: true
+    networks:
+      rede_ligue4:
+        ipv4_address: 100.10.0.10
+  cliente:
+    build:
+      context: .
+      dockerfile: Dockerfile.cliente
+    container_name: cliente
+    privileged: true
+    networks:
+      rede_ligue4:
+        ipv4_address: 100.10.0.2
+  db:
+    image: postgres:13
+    container_name: db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: connect_four
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      rede_ligue4:
+        ipv4_address: 100.10.0.20
+volumes:
+  postgres-data:
+networks:
+  rede_ligue4:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 100.10.0.0/24

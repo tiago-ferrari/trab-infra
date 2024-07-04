@@ -1,0 +1,79 @@
+---
+- name: Deploy Ligue4
+  hosts: localhost
+  become: true
+  become_method: sudo
+  become_user: root
+
+  vars_files:
+    - group_vars/vars.yml
+
+  tasks:
+    - name: Ensure apt cache is up to date
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create project directory
+      file:
+        path: /opt/ligue4
+        state: directory
+        mode: '0755'
+
+    - name: Copy project files to server
+      copy:
+        src: "{{ item }}"
+        dest: /opt/ligue4
+      with_items:
+        - cliente.py
+        - servidor.py
+        - connectfour.proto
+        - Dockerfile.cliente
+        - Dockerfile.servidor
+        - docker-compose.yml
+        - init_db.sql
+        - requirements.txt
+
+    - name: Iniciar contêineres Docker
+      shell: docker-compose up --build -d
+      args:
+        chdir: /opt/ligue4
+
+    - name: Verificar se o contêiner do banco de dados está em execução
+      community.docker.docker_container_info:
+        name: db
+      register: db_status_info
+
+    - name: Debug DB Status
+      debug:
+        var: db_status_info.containers[0].State.Status
+
+    - name: Verificar se o contêiner do servidor está em execução
+      community.docker.docker_container_info:
+        name: servidor
+      register: servidor_status_info
+
+    - name: Debug Servidor Status
+      debug:
+        var: servidor_status_info.containers[0].State.Status
+
+    - name: Verificar se o contêiner do cliente está em execução
+      community.docker.docker_container_info:
+        name: cliente
+      register: cliente_status_info
+
+    - name: Debug Cliente Status
+      debug:
+        var: cliente_status_info.containers[0].State.Status

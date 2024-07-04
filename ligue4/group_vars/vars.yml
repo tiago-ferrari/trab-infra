@@ -1,0 +1,3 @@
+db_user: "user"
+db_password: "password"
+db_name: "connect_four"

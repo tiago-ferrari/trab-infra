@@ -1,0 +1,38 @@
+FROM ubuntu:latest
+
+# Instalar dependências do sistema, adicionar o PPA para Python 3.9 e instalar Python 3.9
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y \
+    python3.9 \
+    python3.9-venv \
+    python3.9-dev \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cria um diretório para a aplicação
+WORKDIR /app
+
+# Cria e ativa um ambiente virtual
+RUN python3.9 -m venv venv
+ENV PATH="/app/venv/bin:$PATH"
+
+# Copia os arquivos requirements.txt para o contêiner
+COPY requirements.txt .
+
+# Instala as dependências Python no ambiente virtual
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar scripts para o diretório /app no contêiner
+COPY cliente.py /app/cliente.py
+
+# Copiar messenger.proto para o diretório /app no contêiner
+COPY connectfour.proto /app/connectfour.proto
+
+# Compila o arquivo .proto
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. connectfour.proto
+
+# Comando para manter o container em execução
+CMD ["tail", "-f", "/dev/null"]
